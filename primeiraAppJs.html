@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>JavaScript Calculadora de Emprestimo</title>
+
+	<meta charset="UTF-8">
+
+	<style type="text/css">
+
+		.output{
+			font-weight: bold;
+		}
+
+		#payment{
+			text-decoration: underline;
+		}
+
+		#graph{
+			border: solid black 1px;
+		}
+
+		th, td{
+			vertical-align: top;
+		}
+
+	</style>
+
+</head>
+<body>
+
+<!--
+
+	Esta e uma tabela HTMl com elementos <input> que permitem ao usuario inserir
+	dados e elementos <span> nois quais o programa pode exibir seus resultados. Esses
+	elementos tem identificadores como "interest" e "years". Essas identificacoes sao 
+	usadas no codigo javascript que vem apos a tabela. Note que alguns dos elementos 
+	de entrada definem rotinas de tratamento de evento onchange ou onclick. Elas especificam
+	strings de codigo javascript a ser execultado quando o usuario insere dados ou da um clique.
+	
+ -->
+
+ <table>
+ 	
+ 	<tr>
+ 		<th>Enter loan Data:</th>
+ 		<td></td>
+ 		<th>Empréstimo Equilíbrio, pagamentos de capital e juros cumulativos</th>
+ 	</tr>
+ 	<tr> 		
+ 		<td>Montante do empréstimo ($):</td>
+ 		<td><input id="amount" onchange="calculate();" /></td>
+ 		<td rowspan="8"> 			
+ 			<canvas id="graph" width="500" height="250"></canvas>
+ 		</td>
+ 	</tr>
+ 	<tr> 		
+ 		<td>Juros Anual (%):</td>
+ 		<td><input id="apr" onchange="calculate();" /></td>
+
+ 	</tr>
+ 	<tr> 		
+ 		<td>Periodo de Reembolso (Anos):</td>
+ 		<td><input id="years" onchange="calculate();" /></td>	
+	</tr>
+ 	<tr>
+ 		<td>CEP (Para encontrar Fiadores):</td>
+		<td><input id="zipcode" onchange="calculate();" /></td> 		
+ 	</tr>
+ 	<tr>
+ 		<th>Pagamentos Aproximados:</th>
+ 		<td><button onclick="calculate();">Calculate</button></td>
+ 	</tr>
+ 	<tr>
+ 		<td>Pagamento Mensal:</td>
+ 		<td>$<span class="output" id="payment"></span></td>
+ 	</tr>
+ 	<tr>
+ 		<td>Pagamento Total:</td>
+ 		<td>$<span class="output" id="total"></span></td>
+ 	</tr>
+ 	<tr>
+ 		<td>Total de Juros:</td>
+ 		<td>$<span class="output" id="totalInterest"></span></td>
+ 	</tr>
+ 	<tr>
+ 		<th>Patrocinadores</th>
+ 		<td colspan="2">
+ 			Inscreva-se para o seu empréstimo com um desses finos credores:
+ 			<div id="lenders"></div>
+ 		</td>
+ 	</tr>
+
+ </table>
+
+ <!--Codigos JavaScript-->
+ <script type="text/javascript">
+ "use strict"; // Usa o modo restrito da ECMAScript 5 nos navegadores que suportam
+
+ /*
+ * Este Script define a funcao calculate() chamada pelas rotinas de tratamento de evento  
+ * no codigo HTML acima. A funcao le valores, Calcula informacoes, Exibe resultados e desenha graficos
+ */
+
+ function calculate(){
+
+ 	// Pesquisa os elementos de entrada e de saida dos elemtos
+ 	var amount = document.getElementById('amount');
+ 	var apr = document.getElementById('apr');
+ 	var years = document.getElementById('years');
+ 	var zipcode = document.getElementById('zipcode');
+ 	var payment = document.getElementById('payment');
+ 	var total = document.getElementById('total');
+ 	var totalInterest = document.getElementById('totalInterest');
+
+ 	// Obtem a entrada do usuario atraves dos elementos de entrada. Presume que tudo isso e valido
+ 	// Converte os juros de porcentagens para decimal e converte taxa anual para taxa mensal
+ 	// Converte o periodo de pagamento em anos para numero de pagamentos mensais
+ 	var principal = parseFloat(amount.value);
+ 	var interest = parseFloat(apr.value) / 100 / 12;
+ 	var payments = parseFloat(years.value) * 12;
+
+ 	// Agora calcula o valor do pagamento mensal
+ 	var x = Math.pow(1+interest,payments); // Math.pow() calcula potencias, exemplo Math.pow(4, 3) resultado 64 4*4*4=64;
+ 	var monthly = (principal*x*interest)/(x-1);
+
+ 	// se o resultado e um numero finito, a entrada do usuario estava correta e temos resultados significativos para exibir
+ 	if(isFinite(monthly)){
+
+ 		// Preenche os campos de saida arredondando duas casas decimais
+ 		payment.innerHTML = monthly.toFixed(2);
+ 		total.innerHTML = (monthly*payments).toFixed(2);
+ 		totalInterest.innerHTML = ((monthly*payments)-principal).toFixed(2);
+
+
+ 		// Salva a entrada do usuario para que possamos recuperala na proxima vez que ele visitar
+
+ 		save(amount.value, apr.value, years.value, zipcode.value);
+
+ 		// Anuncio: Localiza e exibe financeiras locais, mais ignora erros de rede 
+
+ 		try{
+ 			//getLenders(amount.value, apr.value, years.value, zipcode.value);
+ 		}
+ 		catch(e){
+
+ 		}
+
+ 		// Por fim traca o grafico do saldo devedor, dos juros e dos pagamentos do capital
+ 		//chart(principal, interest, monthly, payments);
+ 	}else{
+
+ 		// O rresultado foi not-a-number ou infinito, a entrada estava incorreta ou invalida
+ 		payment.innerHTML = "";
+ 		total.innerHTML = "";
+ 		totalInterest.innerHTML = "";
+
+ 		//chart(); // Sem argumentos, apaga o grafico
+
+ 	}
+
+ }
+
+ // Salva a entrada do usuario como propriedade do objeto Local Storag.
+ // Essas propriedades ainda existirao quando o usuario visitar no futuro
+function save(amount, apr, years, zipcode){
+	if(window.localStorage){
+		localStorage.loan_amount = amount;
+		localStorage.loan_apr = apr;
+		localStorage.loan_years = years;
+		localStorage.loan_zipcode = zipcode;
+	}
+}
+
+// Tenta restaurar os campos de entrada automaticamente quando o documento e carregado pela primeira vez
+window.load = function(){
+	alert('Tentou');
+	if(window.localStorage && localStorage.loan_amount){
+		alert(localStorage.loan_amount);
+		document.getElementById('amount').value = localStorage.loan_amount;
+	 	document.getElementById('apr').value = localStorage.loan_apr;
+	 	document.getElementById('years').value = localStorage.loan_years;
+	 	document.getElementById('zipcode').value = localStorage.loan_zipcode;
+	}
+}
+
+ </script>
+
+
+</body>
+</html>
